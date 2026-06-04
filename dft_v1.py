@@ -86,22 +86,29 @@ V_ext_matrix = get_potential_matrix(V_ext_x, x, G, a)
 V_ext_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
 
 #2D array of our energy E(k)
-all_energies = []
+def get_band_energies(k_points, G, V_matrix):
+    all_energies = []
 
-for k_point in k_points:
-    T = get_kinetic_matrix(k_point, G)
-    H = T + V_ext_matrix
-    eigenvalues, eigenvectors = np.linalg.eigh(H)
-    all_energies.append(eigenvalues)
+    for k_point in k_points:
+        T = get_kinetic_matrix(k_point, G)
+        H = T + V_matrix
 
-#Here we represent all_energies = [k_index, band_index]
-#This means, for each k_point, we store the eigenvalues
-all_energies = np.array(all_energies)
+        eigenvalues, eigenvectors = np.linalg.eigh(H)
+
+        all_energies.append(eigenvalues)
+
+    #Here we represent all_energies = [k_index, band_index]
+    #This means, for each k_point, we store the eigenvalues
+    all_energies = np.array(all_energies)
+
+    return all_energies
+
+all_energies_ext = get_band_energies(k_points, G, V_ext_matrix)
 
 num_bands_to_plot = 5
 
 for band_index in range(num_bands_to_plot):
-    plt.plot(k_points, all_energies[:, band_index])
+    plt.plot(k_points, all_energies_ext[:, band_index])
 plt.xlabel("k")
 plt.ylabel("Energy")
 plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
@@ -129,30 +136,32 @@ def get_density_first_band(k_points, G, x, a, V_matrix):
 
 #computing external and effective density
 n_ext_x = get_density_first_band(k_points, G, x, a, V_ext_matrix)
-n_eff_x = get_density_first_band(k_points, G, x, a, V_eff_matrix)
 
 dx = x[1] - x[0]
-N_electrons = np.sum(n_ext_x) * dx
-
-plt.figure()
-plt.plot(x, n_ext_x)
-plt.xlabel("x")
-plt.ylabel("n(x)")
-plt.title("Total density from first band")
-plt.show()
+print("Initial integrated density:")
+print(np.sum(n_ext_x) * dx)
 
 #next we build V_eff(x) = V_ext(x) + V_Hartree[n](x) + V_xc[n](x)
 #Then we convert it into a matrix: V_eff(X) --> V_eff_matrix
 #Then we build H(k) = T(k) + V_eff_matrix
+
 def get_effective_potential_matrix(n_x, V_ext_x, x, G, a):
     V_hartree_x = get_V_hartree(n_x, x, a)
     V_xc_x = get_V_xc(n_x)
+
     V_eff_x = V_ext_x + V_hartree_x + V_xc_x 
 
     V_eff_matrix = get_potential_matrix(V_eff_x, x, G, a)
     V_eff_matrix = 0.5 * (V_eff_matrix + V_eff_matrix.conj().T)
-    
-    return V_eff_x, V_hartree_x, V_xc_x, V_eff_matrix
+
+    return V_eff_x, V_eff_matrix
+
+V_eff_x, V_eff_matrix = get_effective_potential_matrix(n_ext_x, V_ext_x, x, G, a)
+
+n_eff_x = get_density_first_band(k_points, G, x, a, V_eff_matrix)
+
+print("Density change after one update:")
+print(np.max(np.abs(n_eff_x - n_ext_x)))
 
 all_energies_eff =[]
 
@@ -166,7 +175,7 @@ for k_point in k_points:
 all_energies_eff = np.array(all_energies_eff)
 
 plt.figure()
-plt.plot(k_points, all_energies[:, 0], label="External only")
+plt.plot(k_points, all_energies_ext[:, 0], label="External only")
 plt.plot(k_points, all_energies_eff[:, 0], label="With Hartree + XC")
 plt.xlabel("k")
 plt.ylabel("Energy")
@@ -174,27 +183,62 @@ plt.title("First band before and after one DFT-like update")
 plt.legend()
 plt.show()
 
-print("V_ext min/max:")
-print(np.min(V_ext_x), np.max(V_ext_x))
+#SCF cycle
+n_old = n_ext_x
 
-print("V_hartree min/max:")
-print(np.min(V_hartree_x), np.max(V_hartree_x))
+max_iter = 50
+tol = 1e-6
+mixing = 0.3
+n_current = n_ext_x.copy()
 
-print("V_xc min/max:")
-print(np.min(V_xc_x), np.max(V_xc_x))
+for iteration in range(max_iter):
+    V_eff_x, V_eff_matrix = get_effective_potential_matrix(n_current, V_ext_x, x, G, a)
+    n_new = get_density_first_band(k_points, G, x, a, V_eff_matrix)
+    density_change = density_change = np.max(np.abs(n_new-n_current))
+    
+    print(iteration, density_change)
 
-print("V_eff min/max:")
-print(np.min(V_eff_x), np.max(V_eff_x))
+    if density_change < tol:
+        print("SCF converged")
+        break
 
-print("Max difference between V_eff_matrix and V_ext_matrix:")
-print(np.max(np.abs(V_eff_matrix - V_ext_matrix)))
+    n_current = ((1-mixing) * n_current) + (mixing * n_new)
 
 plt.figure()
-plt.plot(x, n_ext_x, label="External-only density")
-plt.plot(x, n_eff_x, label="After one DFT-like update")
+plt.plot(x, n_ext_x, label="Initial density")
+plt.plot(x, n_current, label="SCF density")
 plt.xlabel("x")
 plt.ylabel("n(x)")
-plt.title("Density before and after one update")
+plt.title("Density before and after SCF")
 plt.legend()
 plt.show()
+print("Final integrated density:")
+print(np.sum(n_current) * dx)
+
+V_scf_x, V_scf_matrix = get_effective_potential_matrix(n_current, V_ext_x, x, G, a)
+all_energies_scf = get_band_energies(k_points, G, V_scf_matrix)
+
+num_bands_to_plot = 5
+
+plt.figure()
+
+for band_index in range(num_bands_to_plot):
+    plt.plot(k_points, all_energies_ext[:, band_index], linestyle="--")
+
+for band_index in range(num_bands_to_plot):
+    plt.plot(k_points, all_energies_scf[:, band_index])
+
+plt.xlabel("k")
+plt.ylabel("Energy")
+plt.title("External-only bands vs SCF bands")
+plt.show()
+
+print("External first band minimum:")
+print(np.min(all_energies_ext[:, 0]))
+
+print("SCF first band minimum:")
+print(np.min(all_energies_scf[:, 0]))
+
+print("First band minimum shift:")
+print(np.min(all_energies_scf[:, 0]) - np.min(all_energies_ext[:, 0]))
 
