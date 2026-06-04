@@ -1,9 +1,10 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Parameters
 a = 10.0     # Lattice Spacing
 E_cut = 20.0 # plane-wave energy cutoff
-Num_k = 10   # num of k-points
+Num_k = 21   # num of k-points
 
 # Basis Setup 
 m_max = np.sqrt(2 * E_cut) * a / (2 * np.pi) # max G vector
@@ -128,5 +129,18 @@ print(all_energies.shape)
 print("First band energies:")
 print(all_energies[:, 0]) #First band energy for every k-point
 
-print("Second band energies:")
-print(all_energies[:, 1]) #Second band energy for every k-point
+print("k-points and first band energies:")
+for i in range(len(k_points)):
+    print(k_points[i], all_energies[i, 0])
+
+
+
+num_bands_to_plot = 5
+
+for band_index in range(num_bands_to_plot):
+    plt.plot(k_points, all_energies[:, band_index], marker="o")
+plt.xlabel("k")
+plt.ylabel("Energy")
+plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
+plt.grid(True)
+plt.show()
