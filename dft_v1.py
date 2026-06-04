@@ -172,7 +172,7 @@ for k_point in k_points:
     H_eff = T + V_eff_matrix
 
     eigenvalues_eff, eigenvectors_eff = np.linalg.eigh(H_eff)
-    all_energies_eff.append()
+    all_energies_eff.append(eigenvalues_eff)
 
 all_energies_eff = np.array(all_energies_eff)
 
