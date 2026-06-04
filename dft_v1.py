@@ -98,18 +98,6 @@ for k_point in k_points:
 #This means, for each k_point, we store the eigenvalues
 all_energies = np.array(all_energies)
 
-print("All energies shape:")
-print(all_energies.shape)
-
-print("First band energies:")
-print(all_energies[:, 0]) #First band energy for every k-point
-
-print("k-points and first band energies:")
-for i in range(len(k_points)):
-    print(k_points[i], all_energies[i, 0])
-
-
-
 num_bands_to_plot = 5
 
 for band_index in range(num_bands_to_plot):
@@ -121,13 +109,13 @@ plt.show()
 
 
 #Density of first band (this is what we will iterate off of)
-def get_density_first_band(k_points, G, x, a, V_ext_matrix): 
+def get_density_first_band(k_points, G, x, a, V_matrix): 
     n_x = np.zeros(len(x)) #creating an empty array
     k_weight = 1.0 / len(k_points)
 
     for k_point in k_points:
         T = get_kinetic_matrix(k_point, G)
-        H = T + V_ext_matrix
+        H = T + V_matrix
 
         eigenvalues, eigenvectors = np.linalg.eigh(H)
         band_index = 0
@@ -139,16 +127,15 @@ def get_density_first_band(k_points, G, x, a, V_ext_matrix):
     
     return n_x
 
-n_x = get_density_first_band(k_points, G, x, a, V_ext_matrix)
+#computing external and effective density
+n_ext_x = get_density_first_band(k_points, G, x, a, V_ext_matrix)
+n_eff_x = get_density_first_band(k_points, G, x, a, V_eff_matrix)
 
 dx = x[1] - x[0]
-N_electrons = np.sum(n_x) * dx
-
-print("Integrated density:")
-print(N_electrons)
+N_electrons = np.sum(n_ext_x) * dx
 
 plt.figure()
-plt.plot(x, n_x)
+plt.plot(x, n_ext_x)
 plt.xlabel("x")
 plt.ylabel("n(x)")
 plt.title("Total density from first band")
@@ -157,13 +144,15 @@ plt.show()
 #next we build V_eff(x) = V_ext(x) + V_Hartree[n](x) + V_xc[n](x)
 #Then we convert it into a matrix: V_eff(X) --> V_eff_matrix
 #Then we build H(k) = T(k) + V_eff_matrix
+def get_effective_potential_matrix(n_x, V_ext_x, x, G, a):
+    V_hartree_x = get_V_hartree(n_x, x, a)
+    V_xc_x = get_V_xc(n_x)
+    V_eff_x = V_ext_x + V_hartree_x + V_xc_x 
 
-V_hartree_x = get_V_hartree(n_x, x, a)
-V_xc_x = get_V_xc(n_x)
-V_eff_x = V_ext_x + V_hartree_x + V_xc_x 
-
-V_eff_matrix = get_potential_matrix(V_eff_x, x, G, a)
-V_eff_matrix = 0.5 * (V_eff_matrix + V_eff_matrix.conj().T)
+    V_eff_matrix = get_potential_matrix(V_eff_x, x, G, a)
+    V_eff_matrix = 0.5 * (V_eff_matrix + V_eff_matrix.conj().T)
+    
+    return V_eff_x, V_hartree_x, V_xc_x, V_eff_matrix
 
 all_energies_eff =[]
 
@@ -175,6 +164,15 @@ for k_point in k_points:
     all_energies_eff.append(eigenvalues_eff)
 
 all_energies_eff = np.array(all_energies_eff)
+
+plt.figure()
+plt.plot(k_points, all_energies[:, 0], label="External only")
+plt.plot(k_points, all_energies_eff[:, 0], label="With Hartree + XC")
+plt.xlabel("k")
+plt.ylabel("Energy")
+plt.title("First band before and after one DFT-like update")
+plt.legend()
+plt.show()
 
 print("V_ext min/max:")
 print(np.min(V_ext_x), np.max(V_ext_x))
@@ -192,10 +190,11 @@ print("Max difference between V_eff_matrix and V_ext_matrix:")
 print(np.max(np.abs(V_eff_matrix - V_ext_matrix)))
 
 plt.figure()
-plt.plot(k_points, all_energies[:, 0], label="External only")
-plt.plot(k_points, all_energies_eff[:, 0], label="With Hartree + XC")
-plt.xlabel("k")
-plt.ylabel("Energy")
-plt.title("First band before and after one DFT-like update")
+plt.plot(x, n_ext_x, label="External-only density")
+plt.plot(x, n_eff_x, label="After one DFT-like update")
+plt.xlabel("x")
+plt.ylabel("n(x)")
+plt.title("Density before and after one update")
 plt.legend()
 plt.show()
+
