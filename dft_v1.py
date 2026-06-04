@@ -18,7 +18,7 @@ N_grid = 4 * m_max + 1 # grid size
 x = np.linspace(0, a, N_grid, endpoint=False) # Real space grid from 0 to a
 
 # kpoints in the first brillouin zone
-k_points = np.linspace(-np.pi/a, np.pi/a, Num_k, endpoint=False)
+k_points = np.linspace(-np.pi/a, np.pi/a, Num_k)
 
 
 
@@ -80,42 +80,10 @@ def reconstruct_psi(coeffs, k_point, G, x, a):
         psi_x += coeffs[i] * np.exp(1j * (k_point + G[i]) * x) / np.sqrt(a) # adds one plane-wave component
     return psi_x
 
-
-
-# Test / Temporary Hamiltonian
-
-k_test = k_points[0]
-
-T_test = get_kinetic_matrix(k_test, G)
-
 V_ext_x = get_V_ext(x, a)
 V_ext_matrix = get_potential_matrix(V_ext_x, x, G, a)
 #Force hermitian
 V_ext_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
-
-H_test = T_test + V_ext_matrix
-
-eigenvalues, eigenvectors = np.linalg.eigh(H_test)
-
-free_eigenvalues, free_eigenvectors = np.linalg.eigh(T_test)
-
-print("Setup Complete")
-print(f"m_max: {m_max}")
-print(f"Number of plane waves: {len(G)}")
-print(f"Real-space grid size: {len(x)}")
-
-print("Hamiltonian shape:")
-print(H_test.shape)
-
-print("Free-electron eigenvalues:")
-print(free_eigenvalues)
-
-print("Eigenvalues with external potential:")
-print(eigenvalues)
-
-print("Energy shifts:")
-print(eigenvalues - free_eigenvalues)
-
 
 #2D array of our energy E(k)
 all_energies = []
@@ -152,50 +120,7 @@ plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
 plt.show()
 
 
-#testing psi construction at k=0 
-#k-point closest to zero
-k_index = np.argmin(np.abs(k_points))
-k0 = k_points[k_index]
-
-#building hamiltonian at k = 0
-T0 = get_kinetic_matrix(k0, G)
-H0 = T0 + V_ext_matrix
-
-#Diagonalize
-eigenvalues0, eigenvectors0 = np.linalg.eigh(H0)
-
-#take first band
-band_index = 0
-coeffs = eigenvectors0[:, band_index]
-
-#reconstruct wavefunction
-psi_x = reconstruct_psi(coeffs, k0, G, x, a)
-
-# Density for this one state
-density_x = np.abs(psi_x)**2
-
-#check normalization
-dx = x[1] - x[0]
-norm = np.sum(density_x) * dx
-
-print("Chosen k-point:")
-print(k0)
-
-print("First-band energy at this k:")
-print(eigenvalues0[band_index])
-
-print("Wavefunction normalization:")
-print(norm)
-
-plt.figure()
-plt.plot(x, density_x)
-plt.xlabel("x")
-plt.ylabel("|psi(x)|^2")
-plt.title("Density from first band at k = 0")
-plt.show()
-
-
-#Building the electron density n(x) from the sum of densities
+#Density of first band (this is what we will iterate off of)
 def get_density_first_band(k_points, G, x, a, V_ext_matrix): 
     n_x = np.zeros(len(x)) #creating an empty array
     k_weight = 1.0 / len(k_points)
@@ -227,4 +152,35 @@ plt.plot(x, n_x)
 plt.xlabel("x")
 plt.ylabel("n(x)")
 plt.title("Total density from first band")
+plt.show()
+
+#next we build V_eff(x) = V_ext(x) + V_Hartree[n](x) + V_xc[n](x)
+#Then we convert it into a matrix: V_eff(X) --> V_eff_matrix
+#Then we build H(k) = T(k) + V_eff_matrix
+
+V_hartree_x = get_V_hartree(n_x, x, a)
+V_xc_x = get_V_xc(n_x)
+V_eff_x = V_ext_x + V_hartree_x + V_xc_x 
+
+V_eff_matrix = get_potential_matrix(V_eff_x, x, G, a)
+V_eff_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
+
+all_energies_eff =[]
+
+for k_point in k_points:
+    T = get_kinetic_matrix(k_point, G)
+    H_eff = T + V_eff_matrix
+
+    eigenvalues_eff, eigenvectors_eff = np.linalg.eigh(H_eff)
+    all_energies_eff.append()
+
+all_energies_eff = np.array(all_energies_eff)
+
+plt.figure()
+plt.plot(k_points, all_energies[:, 0], label="External only")
+plt.plot(k_points, all_energies_eff[:, 0], label="With Hartree + XC")
+plt.xlabel("k")
+plt.ylabel("Energy")
+plt.title("First band before and after one DFT-like update")
+plt.legend()
 plt.show()
