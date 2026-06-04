@@ -43,6 +43,29 @@ def get_V_hartree(n, x, a, alpha=1.0):
     
     return v_hartree_array
 
+def get_potential_matrix(V_x, x, G, a):
+    N_G = len(G)
+    dx = x[1] - x[0]
+    V_matrix = np.zeros((N_G, N_G), dtype=complex)
+    
+    for i in range(N_G):
+        for j in range(N_G):
+            phase = np.exp(1j * (G[j] - G[i]) * x)
+            #below is a numerical approximation for the potential energy matrix
+            V_matrix[i, j] = (dx/a) * np.sum(V_x * phase) 
+    return V_matrix
+
+V_ext_x = get_V_ext(x, a)
+V_ext_matrix = get_potential_matrix(V_ext_x, x, G, a)
+#We need to ensure the potential matrix is hermitian. Numerical approx may not be, so we force it.
+V_ext_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
+print("External potential array shape:")
+print(V_ext_x.shape)
+print("External potential matrix shape:")
+print(V_ext_matrix.shape)
+print("External potential matrix:")
+print(V_ext_matrix)
+ 
 def get_kinetic_matrix(k_point, G):
     N_G = len(G) #Num of plane waves
     T_matrix = np.zeros((N_G, N_G)) #Creates N_G x N_G matrix with all zeros
