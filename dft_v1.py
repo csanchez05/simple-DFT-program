@@ -153,4 +153,48 @@ plt.grid(True)
 plt.show()
 
 
+#testing psi construction at k=0 
+#k-point closest to zero
+k_index = np.argmin(np.abs(k_points))
+k0 = k_points[k_index]
+
+#building hamiltonian at k = 0
+T0 = get_kinetic_matrix(k0, G)
+H0 = T0 + V_ext_matrix
+
+#Diagonalize
+eigenvalues0, eigenvectors0 = np.linalg.eigh(H0)
+
+#take first band
+band_index = 0
+coeffs = eigenvectors0[:, band_index]
+
+#reconstruct wavefunction
+psi_x = reconstruct_psi(coeffs, k0, G, x, a)
+
+# Density for this one state
+density_x = np.abs(psi_x)**2
+
+#check normalization
+dx = x[1] - x[0]
+norm = np.sum(density_x) * dx
+
+print("Chosen k-point:")
+print(k0)
+
+print("First-band energy at this k:")
+print(eigenvalues0[band_index])
+
+print("Wavefunction normalization:")
+print(norm)
+
+plt.figure()
+plt.plot(x, density_x)
+plt.xlabel("x")
+plt.ylabel("|psi(x)|^2")
+plt.title("Density from first band at k = 0")
+plt.grid(True)
+plt.show()
+
+
 
