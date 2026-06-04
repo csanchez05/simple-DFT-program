@@ -45,6 +45,24 @@ def get_V_hartree(n, x, a, alpha=1.0):
     return v_hartree_array
     pass
 
+def get_kinetic_matrix(k_point, G):
+    N_G = len(G) #Num of plane waves
+    T_matrix = np.zeros((N_G, N_G)) #Creates N_G x N_G matrix with all zeros
+    for i in range(N_G):
+        T_matrix[i, i] = 0.5 * (k_point + G[i])**2
+    ## This fills only the diagonal terms in the matrix
+    ## (This is a result from projection of T operator onto
+    ## our plane wave basis set (orthogonal))
+    return T_matrix
+
+k_test = k_points[0]
+T_test = get_kinetic_matrix(k_test, G)
+print("Kinetic matrix shape:")
+print(T_test.shape)
+print("Kinetic matrix:")
+print(T_test)
+
+
 
 print("Setup Complete")
 print(f"Number of plane waves: {len(G)}")
