@@ -28,7 +28,7 @@ def get_V_ext(x, a, alpha = 1.0):
     dx = np.minimum(dx, a - dx) #applying minimum image convention
     return -1.0 / np.sqrt(dx**2 + alpha)
 
-def get_V_xc(n): #temporary toy exchange potential
+def get_V_xc(n): #temporary exchange potential
     n_safe = np.maximum(n, 1e-12) #prevent division by zero
     lda_xc = -(3.0 / np.pi * n_safe)**(1/3)
     return lda_xc
@@ -73,9 +73,15 @@ def get_kinetic_matrix(k_point, G):
     ## our plane wave basis set (orthogonal))
     return T_matrix
 
+def reconstruct_psi(coeffs, k_point, G, x, a):
+    psi_x = np.zeros(len(x), dtype=complex) #Creates empty wavefunction in real space grid.
+    for i in range(len(G)): 
+        psi_x += coeffs[i] * np.exp(1j * (k_point + G[i]) * x) / np.sqrt(a) # adds one plane-wave component
+    return psi_x
 
 
-# Test Hamiltonian
+
+# Test / Temporary Hamiltonian
 
 k_test = k_points[0]
 
@@ -144,3 +150,6 @@ plt.ylabel("Energy")
 plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
 plt.grid(True)
 plt.show()
+
+
+
