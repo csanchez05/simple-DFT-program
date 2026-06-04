@@ -138,7 +138,7 @@ for i in range(len(k_points)):
 num_bands_to_plot = 5
 
 for band_index in range(num_bands_to_plot):
-    plt.plot(k_points, all_energies[:, band_index], marker="o")
+    plt.plot(k_points, all_energies[:, band_index])
 plt.xlabel("k")
 plt.ylabel("Energy")
 plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
