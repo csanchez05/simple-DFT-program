@@ -107,3 +107,26 @@ print(eigenvalues)
 
 print("Energy shifts:")
 print(eigenvalues - free_eigenvalues)
+
+
+#2D array of our energy E(k)
+all_energies = []
+
+for k_point in k_points:
+    T = get_kinetic_matrix(k_point, G)
+    H = T + V_ext_matrix
+    eigenvalues, eigenvectors = np.linalg.eigh(H)
+    all_energies.append(eigenvalues)
+
+#Here we represent all_energies = [k_index, band_index]
+#This means, for each k_point, we store the eigenvalues
+all_energies = np.array(all_energies)
+
+print("All energies shape:")
+print(all_energies.shape)
+
+print("First band energies:")
+print(all_energies[:, 0]) #First band energy for every k-point
+
+print("Second band energies:")
+print(all_energies[:, 1]) #Second band energy for every k-point
