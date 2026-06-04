@@ -73,6 +73,7 @@ def get_kinetic_matrix(k_point, G):
     ## our plane wave basis set (orthogonal))
     return T_matrix
 
+# Constructing psi from eigenvector coefficients
 def reconstruct_psi(coeffs, k_point, G, x, a):
     psi_x = np.zeros(len(x), dtype=complex) #Creates empty wavefunction in real space grid.
     for i in range(len(G)): 
