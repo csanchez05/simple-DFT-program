@@ -149,7 +149,6 @@ for band_index in range(num_bands_to_plot):
 plt.xlabel("k")
 plt.ylabel("Energy")
 plt.title("1D Soft-Coulomb Hydrogen Chain: One-Electron Bands")
-plt.grid(True)
 plt.show()
 
 
@@ -193,8 +192,39 @@ plt.plot(x, density_x)
 plt.xlabel("x")
 plt.ylabel("|psi(x)|^2")
 plt.title("Density from first band at k = 0")
-plt.grid(True)
 plt.show()
 
 
+#Building the electron density n(x) from the sum of densities
+def get_density_first_band(k_points, G, x, a, V_ext_matrix): 
+    n_x = np.zeros(len(x)) #creating an empty array
+    k_weight = 1.0 / len(k_points)
 
+    for k_point in k_points:
+        T = get_kinetic_matrix(k_point, G)
+        H = T + V_ext_matrix
+
+        eigenvalues, eigenvectors = np.linalg.eigh(H)
+        band_index = 0
+        coeffs = eigenvectors[:, band_index]
+
+        psi_x = reconstruct_psi(coeffs, k_point, G, x, a)
+        density_state = np.abs(psi_x)**2
+        n_x = n_x + k_weight * density_state
+    
+    return n_x
+
+n_x = get_density_first_band(k_points, G, x, a, V_ext_matrix)
+
+dx = x[1] - x[0]
+N_electrons = np.sum(n_x) * dx
+
+print("Integrated density:")
+print(N_electrons)
+
+plt.figure()
+plt.plot(x, n_x)
+plt.xlabel("x")
+plt.ylabel("n(x)")
+plt.title("Total density from first band")
+plt.show()
