@@ -16,7 +16,7 @@ N_grid = 4 * m_max + 1
 x = np.linspace(0, a, N_grid, endpoint=False)
 
 # kpoints in the first brillouin zone
-k_points = np.linspace(-1/a, 1/a, Num_k, endpoint=False) * (np.pi)
+k_points = np.linspace(-np.pi/a, np.pi/a, Num_k, endpoint=False)
 
 def get_V_ext(x, a, alpha = 1.0):
     dx = np.abs(x - a/2) #distance to center
