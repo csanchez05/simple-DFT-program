@@ -163,16 +163,7 @@ n_eff_x = get_density_first_band(k_points, G, x, a, V_eff_matrix)
 print("Density change after one update:")
 print(np.max(np.abs(n_eff_x - n_ext_x)))
 
-all_energies_eff =[]
-
-for k_point in k_points:
-    T = get_kinetic_matrix(k_point, G)
-    H_eff = T + V_eff_matrix
-
-    eigenvalues_eff, eigenvectors_eff = np.linalg.eigh(H_eff)
-    all_energies_eff.append(eigenvalues_eff)
-
-all_energies_eff = np.array(all_energies_eff)
+all_energies_eff = get_band_energies(k_points, G, V_eff_matrix)
 
 plt.figure()
 plt.plot(k_points, all_energies_ext[:, 0], label="External only")
@@ -184,8 +175,6 @@ plt.legend()
 plt.show()
 
 #SCF cycle
-n_old = n_ext_x
-
 max_iter = 50
 tol = 1e-6
 mixing = 0.3
@@ -194,7 +183,7 @@ n_current = n_ext_x.copy()
 for iteration in range(max_iter):
     V_eff_x, V_eff_matrix = get_effective_potential_matrix(n_current, V_ext_x, x, G, a)
     n_new = get_density_first_band(k_points, G, x, a, V_eff_matrix)
-    density_change = density_change = np.max(np.abs(n_new-n_current))
+    density_change = np.max(np.abs(n_new-n_current))
     
     print(iteration, density_change)
 
