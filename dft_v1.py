@@ -1,19 +1,20 @@
 import numpy as np
 
 #physical params
-a = 10.0
-E_cut = 20.0
-Num_k = 10
+a = 10.0     # Lattice Spacing
+E_cut = 20.0 # plane-wave energy cutoff
+Num_k = 10   # num of k-points
 
 #reciprocal lattice vectors
-m_max = np.sqrt(2 * E_cut) * a / (2 * np.pi)
+m_max = np.sqrt(2 * E_cut) * a / (2 * np.pi) # max G vector
 m_max = int(m_max)
-m = np.arange(-m_max, m_max +1)
-G = (2* np.pi /a) * m 
+
+m = np.arange(-m_max, m_max +1) # Creating the reciprocal lattice vectors
+G = (2* np.pi) * (m/a)
 
 # real-space grid
-N_grid = 4 * m_max + 1
-x = np.linspace(0, a, N_grid, endpoint=False)
+N_grid = 4 * m_max + 1 # grid size
+x = np.linspace(0, a, N_grid, endpoint=False) # Real space grid from 0 to a
 
 # kpoints in the first brillouin zone
 k_points = np.linspace(-np.pi/a, np.pi/a, Num_k, endpoint=False)
@@ -22,13 +23,11 @@ def get_V_ext(x, a, alpha = 1.0):
     dx = np.abs(x - a/2) #distance to center
     dx = np.minimum(dx, a - dx) #applying minimum image convention
     return -1.0 / np.sqrt(dx**2 + alpha)
-    pass
 
-def get_V_xc(n):
+def get_V_xc(n): #temporary
     n_safe = np.maximum(n, 1e-12) #prevent division by zero
     lda_xc = -(3.0 / np.pi * n_safe)**(1/3)
     return lda_xc
-    pass
 
 def get_V_hartree(n, x, a, alpha=1.0):
     dx_periodic = np.minimum(x, a - x)
@@ -43,7 +42,6 @@ def get_V_hartree(n, x, a, alpha=1.0):
     v_hartree_array = real_part * (x[1] - x[0])
     
     return v_hartree_array
-    pass
 
 def get_kinetic_matrix(k_point, G):
     N_G = len(G) #Num of plane waves
