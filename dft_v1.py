@@ -42,13 +42,15 @@ def get_V_hartree(n, x, a, alpha=1.0):
 
     inverse_fft_step = np.fft.ifft(n_fft * v_fft)
     real_part = np.real(inverse_fft_step)
-    v_hartree_array = real_part * (x[1] - x[0])
+    dx = x[1] - x[0] 
+    v_hartree_array = real_part * dx
     
     return v_hartree_array
 
 def get_potential_matrix(V_x, x, G, a):
     N_G = len(G)
     dx = x[1] - x[0]
+
     V_matrix = np.zeros((N_G, N_G), dtype=complex)
     
     for i in range(N_G):
@@ -56,16 +58,13 @@ def get_potential_matrix(V_x, x, G, a):
             phase = np.exp(1j * (G[j] - G[i]) * x)
             #below is a numerical approximation for the potential energy matrix
             V_matrix[i, j] = (dx/a) * np.sum(V_x * phase) 
-    return V_matrix
 
-V_ext_x = get_V_ext(x, a)
-V_ext_matrix = get_potential_matrix(V_ext_x, x, G, a)
-#We need to ensure the potential matrix is hermitian. Numerical approx may not be, so we force it.
-V_ext_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
+    return V_matrix
 
 def get_kinetic_matrix(k_point, G):
     N_G = len(G) #Num of plane waves
     T_matrix = np.zeros((N_G, N_G)) #Creates N_G x N_G matrix with all zeros
+
     for i in range(N_G):
         T_matrix[i, i] = 0.5 * (k_point + G[i])**2
     ## This fills only the diagonal terms in the matrix
@@ -83,17 +82,28 @@ T_test = get_kinetic_matrix(k_test, G)
 
 V_ext_x = get_V_ext(x, a)
 V_ext_matrix = get_potential_matrix(V_ext_x, x, G, a)
-
+#Force hermitian
 V_ext_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
 
 H_test = T_test + V_ext_matrix
 
 eigenvalues, eigenvectors = np.linalg.eigh(H_test)
 
+free_eigenvalues, free_eigenvectors = np.linalg.eigh(T_test)
+
 print("Setup Complete")
+print(f"m_max: {m_max}")
 print(f"Number of plane waves: {len(G)}")
-print(f"Real space grid size: {len(x)}")
+print(f"Real-space grid size: {len(x)}")
+
 print("Hamiltonian shape:")
 print(H_test.shape)
-print("Eigenvalues:")
+
+print("Free-electron eigenvalues:")
+print(free_eigenvalues)
+
+print("Eigenvalues with external potential:")
 print(eigenvalues)
+
+print("Energy shifts:")
+print(eigenvalues - free_eigenvalues)
