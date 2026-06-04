@@ -163,7 +163,7 @@ V_xc_x = get_V_xc(n_x)
 V_eff_x = V_ext_x + V_hartree_x + V_xc_x 
 
 V_eff_matrix = get_potential_matrix(V_eff_x, x, G, a)
-V_eff_matrix = 0.5 * (V_ext_matrix + V_ext_matrix.conj().T)
+V_eff_matrix = 0.5 * (V_eff_matrix + V_eff_matrix.conj().T)
 
 all_energies_eff =[]
 
@@ -175,6 +175,21 @@ for k_point in k_points:
     all_energies_eff.append(eigenvalues_eff)
 
 all_energies_eff = np.array(all_energies_eff)
+
+print("V_ext min/max:")
+print(np.min(V_ext_x), np.max(V_ext_x))
+
+print("V_hartree min/max:")
+print(np.min(V_hartree_x), np.max(V_hartree_x))
+
+print("V_xc min/max:")
+print(np.min(V_xc_x), np.max(V_xc_x))
+
+print("V_eff min/max:")
+print(np.min(V_eff_x), np.max(V_eff_x))
+
+print("Max difference between V_eff_matrix and V_ext_matrix:")
+print(np.max(np.abs(V_eff_matrix - V_ext_matrix)))
 
 plt.figure()
 plt.plot(k_points, all_energies[:, 0], label="External only")
