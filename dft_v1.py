@@ -18,7 +18,8 @@ N_grid = 4 * m_max + 1 # grid size
 x = np.linspace(0, a, N_grid, endpoint=False) # Real space grid from 0 to a
 
 # kpoints in the first brillouin zone
-k_points = np.linspace(-np.pi/a, np.pi/a, Num_k)
+dk = 2 * np.pi / (a * Num_k)
+k_points = dk * (np.arange(Num_k) - Num_k // 2)
 
 
 
@@ -134,6 +135,7 @@ def get_density_first_band(k_points, G, x, a, V_matrix):
     
     return n_x
 
+
 #computing external and effective density
 n_ext_x = get_density_first_band(k_points, G, x, a, V_ext_matrix)
 
@@ -231,3 +233,26 @@ print(np.min(all_energies_scf[:, 0]))
 print("First band minimum shift:")
 print(np.min(all_energies_scf[:, 0]) - np.min(all_energies_ext[:, 0]))
 
+def get_sorted_states(k_points, G, V_matrix):
+    states = []
+    
+    for k_index, k_point in enumerate(k_points):
+        T = get_kinetic_matrix(k_point, G)
+        H = T + V_matrix
+
+        eigenvalues, eigenvectors = np.linalg.eigh(H)
+    
+        for band_index in range(len(eigenvalues)):
+            energy = eigenvalues[band_index]
+
+            states.append((energy, k_index, k_point, band_index))
+
+    states = sorted(states)
+
+    return states
+
+states = get_sorted_states(k_points, G, V_scf_matrix)
+
+print("Lowest 10 states:")
+for state in states[:10]:
+    print(state)
