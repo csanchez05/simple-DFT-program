@@ -256,3 +256,30 @@ states = get_sorted_states(k_points, G, V_scf_matrix)
 print("Lowest 10 states:")
 for state in states[:10]:
     print(state)
+
+def get_occupation_weights(k_points, G, V_matrix, num_electrons, spin_degeneracy):
+    num_k = len(k_points)
+    num_bands = len(G)
+
+    k_weight = 1.0 / num_k
+    state_capacity = spin_degeneracy * k_weight
+    occupation_weights = np.zeros((num_k, num_bands))
+    states = get_sorted_states(k_points, G, V_matrix)
+    electrons_left = len(num_electrons)
+
+    for state in states:
+        energy, k_index, k_point, band_index = state
+        if electrons_left <= 0:
+            break
+        electrons_added = min(electrons_left, state_capacity)
+        occupation_weights[k_index, band_index] = electrons_added
+        electrons_left = (electrons_left - electrons_added)
+    
+    return occupation_weights   
+
+occupation_weights = get_occupation_weights(
+    k_points, G, V_scf_matrix, num_electrons, spin_degeneracy
+)
+
+print("Total occupied electron weight:")
+print(np.sum(occupation_weights))
